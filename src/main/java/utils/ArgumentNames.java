@@ -48,7 +48,7 @@ public final class ArgumentNames {
   public static final String CPC_BID_MICRO_AMOUNT = "--cpcBidMicroAmount";
   public static final String CREATE_DEFAULT_LISTING_GROUP = "--createDefaultListingGroup";
   public static final String CRITERION_ID = "--criterionId";
-  public static final String CUSTOMER_ID = "--customerId";
+  public static final String CUSTOMER_ID = "6555870972";
   public static final String CUSTOM_KEY = "--customKey";
   public static final String CUSTOMER_IDS = "--customerIds";
   public static final String DRAFT_ID = "--draftId";
