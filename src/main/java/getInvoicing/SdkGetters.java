@@ -7,6 +7,7 @@ import com.google.ads.googleads.v5.services.GoogleAdsServiceClient.SearchPagedRe
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import CostDTO.GoogleAccountDTO;
 
 public class SdkGetters {
     static int PAGE_SIZE = 50 ;
@@ -36,8 +37,8 @@ public class SdkGetters {
         }
     }
 
-    public void getCustomerClientsData(GoogleAdsClient googleAdsClient, long customerId) {
-        String query = "SELECT customer_client.client_customer,customer_client.descriptive_name, customer_client.currency_code FROM customer_client";
+    public List<GoogleAccountDTO> getCustomerClientsData(GoogleAdsClient googleAdsClient, long customerId) {
+        String query = "SELECT customer_client.resource_name,customer_client.descriptive_name, customer_client.currency_code FROM customer_client";
         try (GoogleAdsServiceClient googleAdsServiceClient =
                      googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
             SearchGoogleAdsRequest request =
@@ -47,58 +48,47 @@ public class SdkGetters {
                             .build();
 
             SearchPagedResponse response = googleAdsServiceClient.search(request);
-            StreamSupport.stream(response.iterateAll().spliterator(), false)
-                .forEach(System.out::println);
+            return StreamSupport.stream(response.iterateAll().spliterator(), false)
+                    .map(row -> new GoogleAccountDTO(
+                                    row.getCustomerClient().getResourceName(),
+                                    row.getCustomerClient().getDescriptiveName(),
+                                    row.getCustomerClient().getCurrencyCode()
+                            )
+                    )
+                    .collect(Collectors.toList());
         } catch (GoogleAdsException gae) {
             System.err.printf(
                     "Request ID %s failed due to GoogleAdsException. Underlying errors:%n",
                     gae.getRequestId());
+            return null;
         }
     }
 
-    public void getCampaigns(GoogleAdsClient googleAdsClient, long customerId, List<String> accountList) {
+    public void getCampaigns(GoogleAdsClient googleAdsClient, long customerId, List<GoogleAccountDTO> accountList) {
         String query = "SELECT campaign.id, campaign.name, metrics.cost_micros FROM campaign " +
-        "WHERE segments.date >= '2020-09-01' AND segments.date <= '2020-09-30' " +
+                "WHERE segments.date >= '2020-09-01' AND segments.date <= '2020-09-30' " +
                 "AND metrics.cost_micros > 0 " +
                 "ORDER BY campaign.name";
 
         try (GoogleAdsServiceClient googleAdsServiceClient =
                      googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
-            System.out.println("account,campaign_id,campaign_name,currency,cost");
-            accountList.forEach(account-> {
-                SearchPagedResponse response = googleAdsServiceClient.search(
-                    account, query);
-                StreamSupport.stream(response.iterateAll().spliterator(), false)
-                .forEach(row-> System.out.printf("%s,%s,%s,%s,%s%n",
-                        account,row.getCampaign().getId(), row.getCampaign().getName(),
-                        row.getCurrencyConstant().getCode(),row.getMetrics().getCostMicros()/(1000000.00)));
-                });
-        } catch (GoogleAdsException gae) {
-            System.err.printf(
-                    "Request ID %s failed due to GoogleAdsException. Underlying errors:%n",
-                    gae.getRequestId());
-        }
-    }
-
-    public void getBudgetAccount(GoogleAdsClient googleAdsClient, long customerId, List<String> accountList) {
-
-        String query = "SELECT account_budget.name, account_budget.proposed_start_date_time, account_budget.approved_start_date_time,account_budget.pending_proposal.start_date_time," +
-                "account_budget.amount_served_micros, account_budget.proposed_spending_limit_micros FROM account_budget";
-        try (GoogleAdsServiceClient googleAdsServiceClient =
-                     googleAdsClient.getLatestVersion().createGoogleAdsServiceClient()) {
-            accountList.forEach(account-> {
-                SearchPagedResponse response = googleAdsServiceClient.search(
-                    account, query);
-//                StreamSupport.stream(response.iterateAll().spliterator(), false)
-//                .forEach(System.out.printf("account %s - campaign_id: %s, campaign_name: %s",
-//                        [account,]));
-                for (GoogleAdsRow row : response.iterateAll()) {
-//                    System.out.printf("account %s - budget_account_name: %s with cost: %s",
-//                        account,row.getAccountBudget().getName(), row.getAccountBudget().getAmountServedMicros());
-//                    System.out.println("");
-                    System.out.println(row);
-                }
-            });
+            System.out.println("account_id,account_name,campaign_id,campaign_name,currency,cost");
+            accountList.stream()
+//                    .limit(6)
+                    .filter(googleAccountDTO->(googleAccountDTO.getAccountId().split("/")[3].equals("2774065934")
+//                            || (googleAccountDTO.getAccountId().split("/")[3].equals("1119924918"))
+                    ))
+                    .forEach(googleAccountDTO-> {
+                    String[] accountIdArray = googleAccountDTO.getAccountId().split("/");
+                    SearchPagedResponse response = googleAdsServiceClient.search(
+                        accountIdArray[accountIdArray.length-1], query);
+                    StreamSupport.stream(response.iterateAll().spliterator(), false)
+                        .forEach(row-> System.out.printf("%s,%s,%s,%s,%s,%s%n",
+                                accountIdArray[accountIdArray.length-1],googleAccountDTO.getAccountName().getValue(),
+                            row.getCampaign().getId(), row.getCampaign().getName(),
+                                googleAccountDTO.getCurrencyCode().getValue(),row.getMetrics().getCostMicros()/(1000000.00)));
+                })
+            ;
         } catch (GoogleAdsException gae) {
             System.err.printf(
                     "Request ID %s failed due to GoogleAdsException. Underlying errors:%n",

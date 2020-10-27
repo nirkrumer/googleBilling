@@ -1,5 +1,6 @@
 package getInvoicing;
 
+import CostDTO.GoogleAccountDTO;
 import utils.ArgumentNames;
 import com.google.ads.googleads.lib.GoogleAdsClient;
 import java.io.FileNotFoundException;
@@ -26,10 +27,9 @@ public class App {
 
         SdkGetters sdkGetters = new SdkGetters();
         List<String> accountList = new ArrayList<>();
-        accountList = sdkGetters.getCustomerClients(googleAdsClient, customerId);
-//        sdkGetters.getCustomerClientsData(googleAdsClient, customerId);
-//        sdkGetters.getCampaigns(googleAdsClient, customerId,accountList);
-        sdkGetters.getCampaigns(googleAdsClient, customerId, Arrays.asList("2774065934"));
-//        sdkGetters.getBudgetAccount(googleAdsClient, customerId, Arrays.asList("2774065934"));
+        List<GoogleAccountDTO> googleAccountDTOList = new ArrayList<>();
+//        accountList = sdkGetters.getCustomerClients(googleAdsClient, customerId);
+        googleAccountDTOList = sdkGetters.getCustomerClientsData(googleAdsClient, customerId);
+        sdkGetters.getCampaigns(googleAdsClient, customerId,googleAccountDTOList);
     }
 }
